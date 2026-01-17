@@ -10,7 +10,6 @@ from gui import guiHelper
 from gui.settingsDialogs import SettingsPanel, NVDASettingsDialog
 import core
 import config
-import speech
 import tones
 import ui
 import wx
@@ -23,10 +22,9 @@ ADDON_SUMMARY = addonHandler.getCodeAddon().manifest["summary"]
 confspec = {
 	"protectModeEnabled": "boolean(default=True)",
 	"backupLevels": "integer(default=1)",
-	"previewEnabled": "boolean(default=True)",
 	"summaryButtonEnabled": "boolean(default=True)",
+	"findButtonEnabled": "boolean(default=True)",
 	"findReplaceButtonEnabled": "boolean(default=True)",
-	"clearButtonEnabled": "boolean(default=True)",
 	"shortcutsWhenHiddenEnabled": "boolean(default=True)",
 }
 config.conf.spec["ClipboardContentEditor"] = confspec
@@ -36,7 +34,7 @@ def _buildInformationMessage(text):
 	charCount = len(text)
 	wordCount = len(text.split())
 	lineCount = len(text.splitlines()) if text else 0
-	return _("Information: {chars} characters, {words} words, {lines} lines").format(
+	return _("Clipboard information: {chars} characters, {words} words, {lines} lines").format(
 		chars=charCount,
 		words=wordCount,
 		lines=lineCount,
@@ -67,6 +65,106 @@ def _copyTextToClipboard(text):
 	return False
 
 
+def _isWordChar(ch):
+	return ch.isalnum() or ch == "_"
+
+
+def _isWordBoundary(fullText, start, end):
+	if start > 0 and _isWordChar(fullText[start - 1]):
+		return False
+	if end < len(fullText) and _isWordChar(fullText[end]):
+		return False
+	return True
+
+
+def _findNextMatch(fullText, findText, startIndex, wholeWordsOnly, ignoreCase=False):
+	if ignoreCase:
+		searchText = fullText.lower()
+		searchFind = findText.lower()
+	else:
+		searchText = fullText
+		searchFind = findText
+	i = startIndex
+	while True:
+		idx = searchText.find(searchFind, i)
+		if idx == -1:
+			return None
+		end = idx + len(findText)
+		if not wholeWordsOnly or _isWordBoundary(fullText, idx, end):
+			return idx, end
+		i = idx + 1
+
+
+def _findNext(fullText, findText, startIndex, matchCase, wholeWordsOnly):
+	if matchCase:
+		return _findNextMatch(fullText, findText, startIndex, wholeWordsOnly)
+	return _findNextMatch(
+		fullText,
+		findText,
+		startIndex,
+		wholeWordsOnly,
+		ignoreCase=True,
+	)
+
+
+def _matches(selection, findText, matchCase):
+	if not matchCase:
+		return selection.lower() == findText.lower()
+	return selection == findText
+
+
+def _selectionMatches(fullText, start, end, selection, findText, matchCase, wholeWordsOnly):
+	if not selection:
+		return False
+	if not _matches(selection, findText, matchCase):
+		return False
+	if not wholeWordsOnly:
+		return True
+	return _isWordBoundary(fullText, start, end)
+
+
+def _applyReplacementCase(selection, replaceText):
+	letters = [ch for ch in selection if ch.isalpha()]
+	if not letters:
+		return replaceText
+	if all(ch.isupper() for ch in letters):
+		return replaceText.upper()
+	if all(ch.islower() for ch in letters):
+		return replaceText.lower()
+	if letters[0].isupper():
+		if not replaceText:
+			return replaceText
+		return replaceText.lower().capitalize()
+	return replaceText
+
+
+def _replaceAll(fullText, findText, replaceText, matchCase, wholeWordsOnly):
+	if matchCase:
+		searchText = fullText
+		searchFind = findText
+	else:
+		searchText = fullText.lower()
+		searchFind = findText.lower()
+	parts = []
+	count = 0
+	i = 0
+	while True:
+		idx = searchText.find(searchFind, i)
+		if idx == -1:
+			parts.append(fullText[i:])
+			break
+		end = idx + len(findText)
+		if not wholeWordsOnly or _isWordBoundary(fullText, idx, end):
+			parts.append(fullText[i:idx])
+			parts.append(_applyReplacementCase(fullText[idx:end], replaceText))
+			count += 1
+			i = end
+		else:
+			parts.append(fullText[i : idx + 1])
+			i = idx + 1
+	return "".join(parts), count
+
+
 class ClipboardEditorDialog(wx.Dialog):
 	def __init__(
 		self,
@@ -74,10 +172,9 @@ class ClipboardEditorDialog(wx.Dialog):
 		initialText,
 		onClose,
 		onSave=None,
-		enablePreview=True,
 		enableSummaryButton=True,
+		enableFindButton=True,
 		enableFindReplaceButton=True,
-		enableClearButton=True,
 		shortcutsWhenHiddenEnabled=True,
 	):
 		super().__init__(
@@ -91,12 +188,12 @@ class ClipboardEditorDialog(wx.Dialog):
 		self._resultMessage = None
 		self._resultKind = None
 		self._closing = False
-		self._enablePreview = enablePreview
 		self._enableSummaryButton = enableSummaryButton
-		self._enableFindReplaceButton = enableFindReplaceButton
-		self._enableClearButton = enableClearButton
+		self._enableFindButton = enableFindButton
+		self._enableReplaceButton = enableFindReplaceButton
 		self._shortcutsWhenHiddenEnabled = shortcutsWhenHiddenEnabled
 		self._findDialog = None
+		self._findOnlyDialog = None
 
 		mainSizer = wx.BoxSizer(wx.VERTICAL)
 		textLabel = wx.StaticText(self, label=_("Clipboard content:"))
@@ -109,19 +206,12 @@ class ClipboardEditorDialog(wx.Dialog):
 			style=wx.TE_MULTILINE | wx.TE_RICH2,
 		)
 		textSizer.Add(self._textCtrl, proportion=1, flag=wx.EXPAND)
-		self._clearMenuId = wx.NewIdRef()
-		if self._enableClearButton:
-			self._clearButton = wx.Button(self, id=self._clearMenuId, label=_("&Clear"))
-			textSizer.Add(self._clearButton, flag=wx.LEFT, border=8)
 		mainSizer.Add(textSizer, proportion=1, flag=wx.ALL | wx.EXPAND, border=8)
 
 		buttonSizer = wx.StdDialogButtonSizer()
-		self._readMenuId = wx.NewIdRef()
 		self._informationMenuId = wx.NewIdRef()
 		self._findMenuId = wx.NewIdRef()
-		if self._enablePreview:
-			self._readButton = wx.Button(self, id=self._readMenuId, label=_("&Read"))
-			buttonSizer.AddButton(self._readButton)
+		self._replaceMenuId = wx.NewIdRef()
 		if self._enableSummaryButton:
 			self._informationButton = wx.Button(
 				self,
@@ -129,11 +219,14 @@ class ClipboardEditorDialog(wx.Dialog):
 				label=_("&Information"),
 			)
 			buttonSizer.AddButton(self._informationButton)
-		if self._enableFindReplaceButton:
-			self._findButton = wx.Button(self, id=self._findMenuId, label=_("&Find/Replace"))
+		if self._enableFindButton:
+			self._findButton = wx.Button(self, id=self._findMenuId, label=_("&Find"))
 			buttonSizer.AddButton(self._findButton)
-		self._saveButton = wx.Button(self, wx.ID_SAVE, label=_("&Save"))
-		self._cancelButton = wx.Button(self, wx.ID_CANCEL, label=_("Cancel"))
+		if self._enableReplaceButton:
+			self._replaceButton = wx.Button(self, id=self._replaceMenuId, label=_("&Replace"))
+			buttonSizer.AddButton(self._replaceButton)
+		self._saveButton = wx.Button(self, wx.ID_SAVE, label=_("Save (Ctrl+S)"))
+		self._cancelButton = wx.Button(self, wx.ID_CANCEL, label=_("Cancel (Esc)"))
 		self._saveButton.SetDefault()
 		buttonSizer.AddButton(self._saveButton)
 		buttonSizer.AddButton(self._cancelButton)
@@ -146,50 +239,36 @@ class ClipboardEditorDialog(wx.Dialog):
 
 		self._saveButton.Bind(wx.EVT_BUTTON, self.onSave)
 		self._cancelButton.Bind(wx.EVT_BUTTON, self.onCancel)
-		if self._enableClearButton:
-			self._clearButton.Bind(wx.EVT_BUTTON, self.onClear)
-		if self._enablePreview:
-			self._readButton.Bind(wx.EVT_BUTTON, self.onRead)
-		if self._enableFindReplaceButton:
-			self._findButton.Bind(wx.EVT_BUTTON, self.onFindReplace)
+		if self._enableFindButton:
+			self._findButton.Bind(wx.EVT_BUTTON, self.onFindDialog)
+		if self._enableReplaceButton:
+			self._replaceButton.Bind(wx.EVT_BUTTON, self.onReplaceDialog)
 		self.Bind(wx.EVT_CLOSE, self.onClose)
 		self.Bind(wx.EVT_MENU, self.onSave, id=wx.ID_SAVE)
 		self.Bind(wx.EVT_MENU, self.onCancel, id=wx.ID_CANCEL)
-		if self._enableClearButton or self._shortcutsWhenHiddenEnabled:
-			self.Bind(wx.EVT_MENU, self.onClear, id=self._clearMenuId)
-		if self._enablePreview or self._shortcutsWhenHiddenEnabled:
-			self.Bind(wx.EVT_MENU, self.onRead, id=self._readMenuId)
-		if self._enableFindReplaceButton or self._shortcutsWhenHiddenEnabled:
-			self.Bind(wx.EVT_MENU, self.onFindReplace, id=self._findMenuId)
+		if self._enableFindButton or self._shortcutsWhenHiddenEnabled:
+			self.Bind(wx.EVT_MENU, self.onFindDialog, id=self._findMenuId)
+		if self._enableReplaceButton or self._shortcutsWhenHiddenEnabled:
+			self.Bind(wx.EVT_MENU, self.onReplaceDialog, id=self._replaceMenuId)
 		if self._enableSummaryButton or self._shortcutsWhenHiddenEnabled:
 			self.Bind(wx.EVT_MENU, self.onInformation, id=self._informationMenuId)
 		if self._enableSummaryButton:
 			self._informationButton.Bind(wx.EVT_BUTTON, self.onInformation)
 
 		accels = []
-		if self._enableClearButton or self._shortcutsWhenHiddenEnabled:
-			accels.append((wx.ACCEL_ALT, ord("C"), int(self._clearMenuId)))
-		if self._enablePreview or self._shortcutsWhenHiddenEnabled:
-			accels.append((wx.ACCEL_ALT, ord("R"), int(self._readMenuId)))
 		if self._enableSummaryButton or self._shortcutsWhenHiddenEnabled:
 			accels.append((wx.ACCEL_ALT, ord("I"), int(self._informationMenuId)))
-		if self._enableFindReplaceButton or self._shortcutsWhenHiddenEnabled:
+		if self._enableFindButton or self._shortcutsWhenHiddenEnabled:
 			accels.append((wx.ACCEL_ALT, ord("F"), int(self._findMenuId)))
+		if self._enableReplaceButton or self._shortcutsWhenHiddenEnabled:
+			accels.append((wx.ACCEL_ALT, ord("R"), int(self._replaceMenuId)))
 		accels.extend(
 			[
-				(wx.ACCEL_ALT, ord("S"), wx.ID_SAVE),
+				(wx.ACCEL_CTRL, ord("S"), wx.ID_SAVE),
 				(wx.ACCEL_NORMAL, wx.WXK_ESCAPE, wx.ID_CANCEL),
 			],
 		)
 		self.SetAcceleratorTable(wx.AcceleratorTable(accels))
-
-	def onClear(self, evt):
-		self._textCtrl.SetValue("")
-		if not _copyTextToClipboard(""):
-			ui.message(_("Failed to clear clipboard"))
-			return
-		ui.message(_("Clipboard cleared"))
-		self._textCtrl.SetFocus()
 
 	def onSave(self, evt):
 		text = self._textCtrl.GetValue()
@@ -208,6 +287,11 @@ class ClipboardEditorDialog(wx.Dialog):
 		self._announceAndClose()
 
 	def onCancel(self, evt):
+		if self._textCtrl.GetValue() == self._initialText:
+			self._resultMessage = None
+			self._resultKind = "canceled"
+			self._announceAndClose()
+			return
 		if not self._confirmDiscard():
 			return
 		self._resultMessage = _("Changes canceled")
@@ -215,6 +299,11 @@ class ClipboardEditorDialog(wx.Dialog):
 		self._announceAndClose()
 
 	def onClose(self, evt):
+		if self._textCtrl.GetValue() == self._initialText:
+			self._resultMessage = None
+			self._resultKind = "canceled"
+			self._announceAndClose()
+			return
 		if not self._confirmDiscard():
 			return
 		if not self._resultMessage:
@@ -222,17 +311,8 @@ class ClipboardEditorDialog(wx.Dialog):
 			self._resultKind = "canceled"
 		self._announceAndClose()
 
-	def onRead(self, evt):
-		selection = self._textCtrl.GetStringSelection()
-		text = selection if selection else self._textCtrl.GetValue()
-		if not text:
-			_announceClipboardEmpty()
-			return
-		speech.cancelSpeech()
-		speech.speakMessage(text)
-
-	def onFindReplace(self, evt):
-		self._showFindReplace(focusReplace=False)
+	def onFindDialog(self, evt):
+		self._showFind(focusEdit=True)
 
 	def onInformation(self, evt):
 		text = self._textCtrl.GetValue()
@@ -240,6 +320,17 @@ class ClipboardEditorDialog(wx.Dialog):
 			_announceClipboardEmpty()
 			return
 		ui.message(_buildInformationMessage(text))
+
+	def onReplaceDialog(self, evt):
+		self._showFindReplace(focusReplace=False)
+
+	def _showFind(self, focusEdit):
+		if not self._findOnlyDialog:
+			self._findOnlyDialog = FindDialog(self, self._textCtrl)
+		self._findOnlyDialog.Show()
+		self._findOnlyDialog.Raise()
+		if focusEdit:
+			self._findOnlyDialog.focusFind()
 
 	def _showFindReplace(self, focusReplace):
 		if not self._findDialog:
@@ -255,6 +346,12 @@ class ClipboardEditorDialog(wx.Dialog):
 			except Exception:
 				pass
 			self._findDialog = None
+		if self._findOnlyDialog:
+			try:
+				self._findOnlyDialog.Destroy()
+			except Exception:
+				pass
+			self._findOnlyDialog = None
 		if self._onClose:
 			self._onClose()
 		super().Destroy()
@@ -264,7 +361,6 @@ class ClipboardEditorDialog(wx.Dialog):
 			return
 		self._closing = True
 		if self._resultMessage:
-			speech.cancelSpeech()
 			if self._resultKind == "saved":
 				tones.beep(880, 70)
 				icon = wx.ICON_INFORMATION
@@ -335,12 +431,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			text,
 			onClose=self._onEditorClosed,
 			onSave=self._backupClipboard,
-			enablePreview=config.conf["ClipboardContentEditor"]["previewEnabled"],
 			enableSummaryButton=config.conf["ClipboardContentEditor"]["summaryButtonEnabled"],
+			enableFindButton=config.conf["ClipboardContentEditor"]["findButtonEnabled"],
 			enableFindReplaceButton=config.conf["ClipboardContentEditor"][
 				"findReplaceButtonEnabled"
 			],
-			enableClearButton=config.conf["ClipboardContentEditor"]["clearButtonEnabled"],
 			shortcutsWhenHiddenEnabled=config.conf["ClipboardContentEditor"][
 				"shortcutsWhenHiddenEnabled"
 			],
@@ -355,7 +450,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	@script(
 		description=_("Opens a clipboard editor to modify the current clipboard text."),
-		gesture="kb:control+alt+c",
+		gesture="kb:nvda+e",
 	)
 	def script_openEditor(self, gesture):
 		wx.CallAfter(self._openEditor)
@@ -366,14 +461,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		except Exception:
 			return ""
 
-	def _readClipboard(self):
-		text = self._getClipboardText()
-		if not text:
-			_announceClipboardEmpty()
-			return
-		speech.cancelSpeech()
-		speech.speakMessage(text)
-
 	def _informationClipboard(self):
 		text = self._getClipboardText()
 		if not text:
@@ -382,18 +469,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		ui.message(_buildInformationMessage(text))
 
 	@script(
-		description=_("Reads the current clipboard text."),
-		gesture="kb:alt+r",
-	)
-	def script_readClipboard(self, gesture):
-		if self._editorDialog and self._editorDialog.IsShown() and self._editorDialog.IsActive():
-			self._editorDialog.onRead(gesture)
-			return
-		self._readClipboard()
-
-	@script(
 		description=_("Shows information about the current clipboard text."),
-		gesture="kb:alt+i",
+		gesture="kb:nvda+i",
 	)
 	def script_informationClipboard(self, gesture):
 		if self._editorDialog and self._editorDialog.IsShown() and self._editorDialog.IsActive():
@@ -403,7 +480,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	@script(
 		description=_("Restores the previous clipboard content from backup."),
-		gesture="kb:control+shift+z",
+		gesture="kb:nvda+z",
 	)
 	def script_restorePrevious(self, gesture):
 		if not config.conf["ClipboardContentEditor"]["protectModeEnabled"]:
@@ -423,16 +500,20 @@ class FindReplaceDialog(wx.Dialog):
 	def __init__(self, parent, textCtrl):
 		super().__init__(
 			parent,
-			title=_("Find/Replace"),
+			title=_("Replace"),
 			style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
 		)
 		self._textCtrl = textCtrl
 
 		mainSizer = wx.BoxSizer(wx.VERTICAL)
 		sHelper = guiHelper.BoxSizerHelper(self, sizer=mainSizer)
-		self.findEdit = sHelper.addLabeledControl(_("Find"), wx.TextCtrl)
-		self.replaceEdit = sHelper.addLabeledControl(_("Replace"), wx.TextCtrl)
-		self.matchCaseCheckBox = sHelper.addItem(wx.CheckBox(self, label=_("Match case")))
+		self.findEdit = sHelper.addLabeledControl(_("Source text"), wx.TextCtrl)
+		self.replaceEdit = sHelper.addLabeledControl(_("Replacement text"), wx.TextCtrl)
+		self.matchCaseCheckBox = sHelper.addItem(wx.CheckBox(self, label=_("Case sensitive")))
+		self.matchWholeWordsCheckBox = sHelper.addItem(
+			wx.CheckBox(self, label=_("Replace whole words only, not part of other words")),
+		)
+		self.matchWholeWordsCheckBox.SetValue(True)
 
 		buttonSizer = wx.StdDialogButtonSizer()
 		self.findNextButton = wx.Button(self, label=_("Find next"))
@@ -472,18 +553,20 @@ class FindReplaceDialog(wx.Dialog):
 		findText = self.findEdit.GetValue()
 		if not findText:
 			ui.message(_("Find text is empty"))
-			return
+			return False
 		matchCase = self.matchCaseCheckBox.GetValue()
+		wholeWordsOnly = self.matchWholeWordsCheckBox.GetValue()
 		fullText = self._textCtrl.GetValue()
 		start, end = self._textCtrl.GetSelection()
-		found = self._findNext(fullText, findText, end, matchCase)
+		found = _findNext(fullText, findText, end, matchCase, wholeWordsOnly)
 		if found is None:
-			found = self._findNext(fullText, findText, 0, matchCase)
+			found = _findNext(fullText, findText, 0, matchCase, wholeWordsOnly)
 		if found is None:
 			ui.message(_("Text not found"))
-			return
+			return False
 		self._textCtrl.SetFocus()
 		self._textCtrl.SetSelection(found[0], found[1])
+		return True
 
 	def onReplace(self, evt):
 		findText = self.findEdit.GetValue()
@@ -492,16 +575,26 @@ class FindReplaceDialog(wx.Dialog):
 			return
 		replaceText = self.replaceEdit.GetValue()
 		matchCase = self.matchCaseCheckBox.GetValue()
+		wholeWordsOnly = self.matchWholeWordsCheckBox.GetValue()
 		fullText = self._textCtrl.GetValue()
 		start, end = self._textCtrl.GetSelection()
 		selected = self._textCtrl.GetStringSelection()
 		replaced = False
 		if (
-			self._selectionMatches(fullText, start, end, selected, findText, matchCase)
+			_selectionMatches(
+				fullText,
+				start,
+				end,
+				selected,
+				findText,
+				matchCase,
+				wholeWordsOnly,
+			)
 			and start != end
 		):
-			self._textCtrl.Replace(start, end, replaceText)
-			self._textCtrl.SetSelection(start, start + len(replaceText))
+			replacement = _applyReplacementCase(selected, replaceText)
+			self._textCtrl.Replace(start, end, replacement)
+			self._textCtrl.SetSelection(start, start + len(replacement))
 			replaced = True
 		if not replaced:
 			self.onFindNext(evt)
@@ -509,11 +602,20 @@ class FindReplaceDialog(wx.Dialog):
 			selected = self._textCtrl.GetStringSelection()
 			fullText = self._textCtrl.GetValue()
 			if (
-				self._selectionMatches(fullText, start, end, selected, findText, matchCase)
+				_selectionMatches(
+					fullText,
+					start,
+					end,
+					selected,
+					findText,
+					matchCase,
+					wholeWordsOnly,
+				)
 				and start != end
 			):
-				self._textCtrl.Replace(start, end, replaceText)
-				self._textCtrl.SetSelection(start, start + len(replaceText))
+				replacement = _applyReplacementCase(selected, replaceText)
+				self._textCtrl.Replace(start, end, replacement)
+				self._textCtrl.SetSelection(start, start + len(replacement))
 				replaced = True
 		if replaced:
 			self._resetAndHide()
@@ -525,8 +627,15 @@ class FindReplaceDialog(wx.Dialog):
 			return
 		replaceText = self.replaceEdit.GetValue()
 		matchCase = self.matchCaseCheckBox.GetValue()
+		wholeWordsOnly = self.matchWholeWordsCheckBox.GetValue()
 		fullText = self._textCtrl.GetValue()
-		newText, count = self._replaceAll(fullText, findText, replaceText, matchCase)
+		newText, count = _replaceAll(
+			fullText,
+			findText,
+			replaceText,
+			matchCase,
+			wholeWordsOnly,
+		)
 		if count == 0:
 			ui.message(_("Text not found"))
 			return
@@ -542,75 +651,77 @@ class FindReplaceDialog(wx.Dialog):
 		self.replaceEdit.SetValue("")
 		self.Hide()
 
-	def _findNext(self, fullText, findText, startIndex, matchCase):
-		if matchCase:
-			return self._findNextMatch(fullText, findText, startIndex)
-		return self._findNextMatch(fullText, findText, startIndex, ignoreCase=True)
 
-	def _matches(self, selection, findText, matchCase):
-		if not matchCase:
-			return selection.lower() == findText.lower()
-		return selection == findText
+class FindDialog(wx.Dialog):
+	def __init__(self, parent, textCtrl):
+		super().__init__(
+			parent,
+			title=_("Find"),
+			style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER,
+		)
+		self._textCtrl = textCtrl
 
-	def _selectionMatches(self, fullText, start, end, selection, findText, matchCase):
-		if not selection:
-			return False
-		if not self._matches(selection, findText, matchCase):
-			return False
-		return self._isWordBoundary(fullText, start, end)
+		mainSizer = wx.BoxSizer(wx.VERTICAL)
+		sHelper = guiHelper.BoxSizerHelper(self, sizer=mainSizer)
+		self.findEdit = sHelper.addLabeledControl(_("Find what"), wx.TextCtrl)
+		self.matchCaseCheckBox = sHelper.addItem(wx.CheckBox(self, label=_("Case sensitive")))
+		self.matchWholeWordsCheckBox = sHelper.addItem(
+			wx.CheckBox(self, label=_("Find whole words only, not part of other words")),
+		)
+		self.matchWholeWordsCheckBox.SetValue(True)
 
-	def _isWordChar(self, ch):
-		return ch.isalnum() or ch == "_"
+		buttonSizer = wx.StdDialogButtonSizer()
+		self.findNextButton = wx.Button(self, label=_("Find next"))
+		self.closeButton = wx.Button(self, wx.ID_CLOSE)
+		buttonSizer.AddButton(self.findNextButton)
+		buttonSizer.AddButton(self.closeButton)
+		buttonSizer.Realize()
+		mainSizer.Add(buttonSizer, flag=wx.ALL | wx.ALIGN_RIGHT, border=8)
 
-	def _isWordBoundary(self, fullText, start, end):
-		if start > 0 and self._isWordChar(fullText[start - 1]):
-			return False
-		if end < len(fullText) and self._isWordChar(fullText[end]):
-			return False
-		return True
+		self.SetSizer(mainSizer)
+		self.Layout()
 
-	def _findNextMatch(self, fullText, findText, startIndex, ignoreCase=False):
-		if ignoreCase:
-			searchText = fullText.lower()
-			searchFind = findText.lower()
-		else:
-			searchText = fullText
-			searchFind = findText
-		i = startIndex
-		while True:
-			idx = searchText.find(searchFind, i)
-			if idx == -1:
-				return None
-			end = idx + len(findText)
-			if self._isWordBoundary(fullText, idx, end):
-				return idx, end
-			i = idx + 1
+		self.findNextButton.Bind(wx.EVT_BUTTON, self.onFindNext)
+		self.closeButton.Bind(wx.EVT_BUTTON, self.onClose)
+		self.Bind(wx.EVT_CLOSE, self.onClose)
+		self.Bind(wx.EVT_CHAR_HOOK, self.onCharHook)
 
-	def _replaceAll(self, fullText, findText, replaceText, matchCase):
-		if matchCase:
-			searchText = fullText
-			searchFind = findText
-		else:
-			searchText = fullText.lower()
-			searchFind = findText.lower()
-		parts = []
-		count = 0
-		i = 0
-		while True:
-			idx = searchText.find(searchFind, i)
-			if idx == -1:
-				parts.append(fullText[i:])
-				break
-			end = idx + len(findText)
-			if self._isWordBoundary(fullText, idx, end):
-				parts.append(fullText[i:idx])
-				parts.append(replaceText)
-				count += 1
-				i = end
-			else:
-				parts.append(fullText[i : idx + 1])
-				i = idx + 1
-		return "".join(parts), count
+	def onCharHook(self, evt):
+		if evt.GetKeyCode() == wx.WXK_ESCAPE:
+			self.Hide()
+			return
+		if evt.GetKeyCode() in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+			self.onFindNext(evt)
+			return
+		evt.Skip()
+
+	def focusFind(self):
+		self.findEdit.SetFocus()
+
+	def onFindNext(self, evt):
+		findText = self.findEdit.GetValue()
+		if not findText:
+			ui.message(_("Find text is empty"))
+			return
+		matchCase = self.matchCaseCheckBox.GetValue()
+		wholeWordsOnly = self.matchWholeWordsCheckBox.GetValue()
+		fullText = self._textCtrl.GetValue()
+		start, end = self._textCtrl.GetSelection()
+		found = _findNext(fullText, findText, end, matchCase, wholeWordsOnly)
+		if found is None:
+			found = _findNext(fullText, findText, 0, matchCase, wholeWordsOnly)
+		if found is None:
+			ui.message(_("Text not found"))
+			return
+		self._textCtrl.SetFocus()
+		self._textCtrl.SetSelection(found[0], found[1])
+
+	def _findAndClose(self):
+		if self.onFindNext(None):
+			self.Hide()
+
+	def onClose(self, evt):
+		self.Hide()
 
 
 class AddonSettingsPanel(SettingsPanel):
@@ -627,26 +738,20 @@ class AddonSettingsPanel(SettingsPanel):
 		self.shortcutsWhenHiddenCheckBox.SetValue(
 			config.conf["ClipboardContentEditor"]["shortcutsWhenHiddenEnabled"],
 		)
-		self.clearCheckBox = sHelper.addItem(
-			wx.CheckBox(self, label=_("Enable &clear button in editor")),
-		)
-		self.clearCheckBox.SetValue(
-			config.conf["ClipboardContentEditor"]["clearButtonEnabled"],
-		)
-		self.previewCheckBox = sHelper.addItem(
-			wx.CheckBox(self, label=_("Enable &read button in editor")),
-		)
-		self.previewCheckBox.SetValue(config.conf["ClipboardContentEditor"]["previewEnabled"])
 		self.summaryCheckBox = sHelper.addItem(
 			wx.CheckBox(self, label=_("Enable &information button in editor")),
 		)
 		self.summaryCheckBox.SetValue(
 			config.conf["ClipboardContentEditor"]["summaryButtonEnabled"],
 		)
-		self.findReplaceCheckBox = sHelper.addItem(
-			wx.CheckBox(self, label=_("Enable &find/replace button in editor")),
+		self.findCheckBox = sHelper.addItem(
+			wx.CheckBox(self, label=_("Enable &find button in editor")),
 		)
-		self.findReplaceCheckBox.SetValue(
+		self.findCheckBox.SetValue(config.conf["ClipboardContentEditor"]["findButtonEnabled"])
+		self.replaceCheckBox = sHelper.addItem(
+			wx.CheckBox(self, label=_("Enable &replace button in editor")),
+		)
+		self.replaceCheckBox.SetValue(
 			config.conf["ClipboardContentEditor"]["findReplaceButtonEnabled"],
 		)
 		self.protectModeCheckBox = sHelper.addItem(
@@ -664,14 +769,13 @@ class AddonSettingsPanel(SettingsPanel):
 
 	def onSave(self):
 		config.conf["ClipboardContentEditor"]["protectModeEnabled"] = self.protectModeCheckBox.GetValue()
-		config.conf["ClipboardContentEditor"]["previewEnabled"] = self.previewCheckBox.GetValue()
 		config.conf["ClipboardContentEditor"]["summaryButtonEnabled"] = self.summaryCheckBox.GetValue()
-		config.conf["ClipboardContentEditor"]["clearButtonEnabled"] = self.clearCheckBox.GetValue()
 		config.conf["ClipboardContentEditor"][
 			"shortcutsWhenHiddenEnabled"
 		] = self.shortcutsWhenHiddenCheckBox.GetValue()
+		config.conf["ClipboardContentEditor"]["findButtonEnabled"] = self.findCheckBox.GetValue()
 		config.conf["ClipboardContentEditor"][
 			"findReplaceButtonEnabled"
-		] = self.findReplaceCheckBox.GetValue()
+		] = self.replaceCheckBox.GetValue()
 		config.conf["ClipboardContentEditor"]["backupLevels"] = int(self.backupLevelsSpin.GetValue())
 

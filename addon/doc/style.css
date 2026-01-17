@@ -24,3 +24,18 @@ a { text-decoration : underline;
 text-decoration : none; 
 }
 a:focus, a:hover {outline: solid}
+.lang-switch {
+text-align: center;
+margin: 0.5em 0 1em;
+}
+.lang-switch a {
+display: inline-block;
+padding: 0.4em 0.8em;
+border: 1px solid #333;
+border-radius: 4px;
+text-decoration: none;
+}
+.lang-switch a:focus, .lang-switch a:hover {
+outline: none;
+background: #f0f0f0;
+}

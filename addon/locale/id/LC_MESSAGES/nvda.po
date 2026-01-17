@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: ClipboardContentEditor 1.0.0\n"
+"Project-Id-Version: ClipboardContentEditor 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-01-03 00:00+0000\n"
 "PO-Revision-Date: 2026-01-03 00:00+0000\n"
@@ -11,47 +11,29 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "Clipboard Content Editor - Donation"
-msgstr "Clipboard Content Editor - Donasi"
+msgid "Clipboard Content Editor - What's New"
+msgstr "Clipboard Content Editor - Apa yang Baru"
 
-msgid "Thank you for using Clipboard Content Editor."
-msgstr "Terima kasih telah menggunakan Clipboard Content Editor."
+msgid "Clipboard Content Editor - Installation"
+msgstr "Clipboard Content Editor - Instalasi"
 
-msgid "If you would like to support development, you can donate using:"
-msgstr "Jika Anda ingin mendukung pengembangan, Anda bisa berdonasi melalui:"
+msgid "Do you want to continue installation or view what's new first?"
+msgstr "Apakah Anda ingin melanjutkan instalasi atau melihat apa yang baru terlebih dahulu?"
 
-msgid "Credit card: {number}"
-msgstr "Kartu kredit: {number}"
-
-msgid "Name: {name}"
-msgstr "Atas nama: {name}"
-
-msgid "Other methods (Indonesia):"
-msgstr "Metode lain (Indonesia):"
-
-msgid "Open donation &page"
-msgstr "Buka halaman &donasi"
-
-msgid "&Copy card number"
-msgstr "&Salin nomor kartu"
+msgid "&View What's New"
+msgstr "Lihat Apa yang Baru (&V)"
 
 msgid "&Continue Installation"
-msgstr "&Lanjutkan instalasi"
+msgstr "Lanjutkan Instalasi (&C)"
 
-msgid "Unable to open the donation page right now."
-msgstr "Tidak dapat membuka halaman donasi saat ini."
+msgid "What's new information is unavailable."
+msgstr "Informasi Apa yang Baru tidak tersedia."
 
-msgid "Donation"
-msgstr "Donasi"
+msgid "&OK"
+msgstr "&OK"
 
-msgid "Card number copied to clipboard."
-msgstr "Nomor kartu disalin ke clipboard."
-
-msgid "Unable to copy the card number right now."
-msgstr "Tidak dapat menyalin nomor kartu saat ini."
-
-msgid "Information: {chars} characters, {words} words, {lines} lines"
-msgstr "Informasi: {chars} karakter, {words} kata, {lines} baris"
+msgid "Clipboard information: {chars} characters, {words} words, {lines} lines"
+msgstr "Informasi clipboard: {chars} karakter, {words} kata, {lines} baris"
 
 msgid "Clipboard is empty"
 msgstr "Clipboard kosong"
@@ -62,29 +44,20 @@ msgstr "Clipboard Content Editor"
 msgid "Clipboard content:"
 msgstr "Isi clipboard:"
 
-msgid "&Clear"
-msgstr "&Bersihkan"
-
-msgid "&Read"
-msgstr "&Baca"
-
 msgid "&Information"
 msgstr "&Informasi"
 
-msgid "&Find/Replace"
-msgstr "&Cari/Ganti"
+msgid "&Find"
+msgstr "Cari (&F)"
 
-msgid "&Save"
-msgstr "&Simpan"
+msgid "&Replace"
+msgstr "Ganti (&R)"
 
-msgid "Cancel"
-msgstr "Batal"
+msgid "Save (Ctrl+S)"
+msgstr "Simpan (Ctrl+S)"
 
-msgid "Failed to clear clipboard"
-msgstr "Gagal mengosongkan clipboard"
-
-msgid "Clipboard cleared"
-msgstr "Clipboard dikosongkan"
+msgid "Cancel (Esc)"
+msgstr "Batal (Esc)"
 
 msgid "Clipboard updated"
 msgstr "Clipboard diperbarui"
@@ -100,9 +73,6 @@ msgstr "Anda memiliki perubahan yang belum disimpan. Buang perubahan ini?"
 
 msgid "Opens a clipboard editor to modify the current clipboard text."
 msgstr "Membuka editor clipboard untuk mengubah teks clipboard saat ini."
-
-msgid "Reads the current clipboard text."
-msgstr "Membaca teks clipboard saat ini."
 
 msgid "Shows information about the current clipboard text."
 msgstr "Menampilkan informasi tentang teks clipboard saat ini."
@@ -122,18 +92,29 @@ msgstr "Clipboard sebelumnya dipulihkan"
 msgid "Failed to restore clipboard"
 msgstr "Gagal memulihkan clipboard"
 
-msgid "Find/Replace"
-msgstr "Cari/Ganti"
-
 msgid "Find"
 msgstr "Cari"
 
 msgid "Replace"
 msgstr "Ganti"
 
-msgid "Match case"
-msgstr "Cocokkan huruf besar/kecil"
+msgid "Find what"
+msgstr "Cari apa"
 
+msgid "Source text"
+msgstr "Teks asal"
+
+msgid "Replacement text"
+msgstr "Teks pengganti"
+
+msgid "Case sensitive"
+msgstr "Peka huruf besar/kecil"
+
+msgid "Replace whole words only, not part of other words"
+msgstr "Ganti hanya kata utuh, bukan bagian kata"
+
+msgid "Find whole words only, not part of other words"
+msgstr "Cari hanya kata utuh, bukan bagian kata"
 msgid "Find next"
 msgstr "Cari berikutnya"
 
@@ -152,17 +133,14 @@ msgstr "{count} penggantian"
 msgid "Keep shortcuts active when buttons are hidden in editor"
 msgstr "Tetap aktifkan shortcut saat tombol disembunyikan di editor"
 
-msgid "Enable &clear button in editor"
-msgstr "Aktifkan tombol &bersihkan di editor"
-
-msgid "Enable &read button in editor"
-msgstr "Aktifkan tombol &baca di editor"
-
 msgid "Enable &information button in editor"
-msgstr "Aktifkan tombol &informasi di editor"
+msgstr "Aktifkan tombol Informasi (&I) di editor"
 
-msgid "Enable &find/replace button in editor"
-msgstr "Aktifkan tombol &cari/ganti di editor"
+msgid "Enable &find button in editor"
+msgstr "Aktifkan tombol Cari (&F) di editor"
+
+msgid "Enable &replace button in editor"
+msgstr "Aktifkan tombol Ganti (&R) di editor"
 
 msgid "Enable &protect mode (clipboard backup)"
 msgstr "Aktifkan mode &proteksi (cadangan clipboard)"

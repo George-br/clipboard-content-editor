@@ -1,6 +1,6 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: ClipboardContentEditor 1.0.0\n"
+"Project-Id-Version: ClipboardContentEditor 1.1.0\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-01-03 00:00+0000\n"
 "PO-Revision-Date: 2026-01-03 00:00+0000\n"
@@ -11,47 +11,29 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "Clipboard Content Editor - Donation"
-msgstr "Clipboard Content Editor - Donation"
+msgid "Clipboard Content Editor - What's New"
+msgstr "Clipboard Content Editor - What's New"
 
-msgid "Thank you for using Clipboard Content Editor."
-msgstr "Thank you for using Clipboard Content Editor."
+msgid "Clipboard Content Editor - Installation"
+msgstr "Clipboard Content Editor - Installation"
 
-msgid "If you would like to support development, you can donate using:"
-msgstr "If you would like to support development, you can donate using:"
+msgid "Do you want to continue installation or view what's new first?"
+msgstr "Do you want to continue installation or view what's new first?"
 
-msgid "Credit card: {number}"
-msgstr "Credit card: {number}"
-
-msgid "Name: {name}"
-msgstr "Name: {name}"
-
-msgid "Other methods (Indonesia):"
-msgstr "Other methods (Indonesia):"
-
-msgid "Open donation &page"
-msgstr "Open donation &page"
-
-msgid "&Copy card number"
-msgstr "&Copy card number"
+msgid "&View What's New"
+msgstr "&View What's New"
 
 msgid "&Continue Installation"
 msgstr "&Continue Installation"
 
-msgid "Unable to open the donation page right now."
-msgstr "Unable to open the donation page right now."
+msgid "What's new information is unavailable."
+msgstr "What's new information is unavailable."
 
-msgid "Donation"
-msgstr "Donation"
+msgid "&OK"
+msgstr "&OK"
 
-msgid "Card number copied to clipboard."
-msgstr "Card number copied to clipboard."
-
-msgid "Unable to copy the card number right now."
-msgstr "Unable to copy the card number right now."
-
-msgid "Information: {chars} characters, {words} words, {lines} lines"
-msgstr "Information: {chars} characters, {words} words, {lines} lines"
+msgid "Clipboard information: {chars} characters, {words} words, {lines} lines"
+msgstr "Clipboard information: {chars} characters, {words} words, {lines} lines"
 
 msgid "Clipboard is empty"
 msgstr "Clipboard is empty"
@@ -62,29 +44,20 @@ msgstr "Clipboard Content Editor"
 msgid "Clipboard content:"
 msgstr "Clipboard content:"
 
-msgid "&Clear"
-msgstr "&Clear"
-
-msgid "&Read"
-msgstr "&Read"
-
 msgid "&Information"
 msgstr "&Information"
 
-msgid "&Find/Replace"
-msgstr "&Find/Replace"
+msgid "&Find"
+msgstr "&Find"
 
-msgid "&Save"
-msgstr "&Save"
+msgid "&Replace"
+msgstr "&Replace"
 
-msgid "Cancel"
-msgstr "Cancel"
+msgid "Save (Ctrl+S)"
+msgstr "Save (Ctrl+S)"
 
-msgid "Failed to clear clipboard"
-msgstr "Failed to clear clipboard"
-
-msgid "Clipboard cleared"
-msgstr "Clipboard cleared"
+msgid "Cancel (Esc)"
+msgstr "Cancel (Esc)"
 
 msgid "Clipboard updated"
 msgstr "Clipboard updated"
@@ -100,9 +73,6 @@ msgstr "You have unsaved changes. Discard them?"
 
 msgid "Opens a clipboard editor to modify the current clipboard text."
 msgstr "Opens a clipboard editor to modify the current clipboard text."
-
-msgid "Reads the current clipboard text."
-msgstr "Reads the current clipboard text."
 
 msgid "Shows information about the current clipboard text."
 msgstr "Shows information about the current clipboard text."
@@ -122,17 +92,29 @@ msgstr "Previous clipboard restored"
 msgid "Failed to restore clipboard"
 msgstr "Failed to restore clipboard"
 
-msgid "Find/Replace"
-msgstr "Find/Replace"
-
 msgid "Find"
 msgstr "Find"
 
 msgid "Replace"
 msgstr "Replace"
 
-msgid "Match case"
-msgstr "Match case"
+msgid "Find what"
+msgstr "Find what"
+
+msgid "Source text"
+msgstr "Source text"
+
+msgid "Replacement text"
+msgstr "Replacement text"
+
+msgid "Case sensitive"
+msgstr "Case sensitive"
+
+msgid "Replace whole words only, not part of other words"
+msgstr "Replace whole words only, not part of other words"
+
+msgid "Find whole words only, not part of other words"
+msgstr "Find whole words only, not part of other words"
 
 msgid "Find next"
 msgstr "Find next"
@@ -152,17 +134,14 @@ msgstr "{count} replacements"
 msgid "Keep shortcuts active when buttons are hidden in editor"
 msgstr "Keep shortcuts active when buttons are hidden in editor"
 
-msgid "Enable &clear button in editor"
-msgstr "Enable &clear button in editor"
-
-msgid "Enable &read button in editor"
-msgstr "Enable &read button in editor"
-
 msgid "Enable &information button in editor"
 msgstr "Enable &information button in editor"
 
-msgid "Enable &find/replace button in editor"
-msgstr "Enable &find/replace button in editor"
+msgid "Enable &find button in editor"
+msgstr "Enable &find button in editor"
+
+msgid "Enable &replace button in editor"
+msgstr "Enable &replace button in editor"
 
 msgid "Enable &protect mode (clipboard backup)"
 msgstr "Enable &protect mode (clipboard backup)"

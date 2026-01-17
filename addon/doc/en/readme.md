@@ -2,81 +2,81 @@
 
 Author: Fauzan January
 
-This NVDA add-on lets you edit the current clipboard text in a simple dialog before pasting it elsewhere. It also provides quick actions to read the clipboard, show information, and find/replace text.
+[Read in Indonesian](../id/readme.md)
+
+This NVDA add-on lets you edit the current clipboard text in a simple dialog before pasting it elsewhere. It also provides quick actions to show information, find text, and replace text.
+
+## What's New?
+
+- Global shortcuts are now standardized: NVDA+E opens the editor dialog, NVDA+Z restores clipboard backups, and NVDA+I announces clipboard character/word/line counts.
+- Global shortcuts can now be reassigned via NVDA Input Gestures.
+- The Clear feature has been removed entirely (button, shortcut, settings, and notifications) because you can clear text directly in the clipboard editor.
+- The Read feature has been removed entirely (button, shortcut, settings, and notifications) because NVDA already provides clipboard reading via NVDA+C.
+- A Find button was added before Replace, with separate enable/disable options and updated shortcuts (Alt+F for Find, Alt+R for Replace).
+- Replace now preserves case by default, matching the capitalization of the found text.
+- Checkbox labels were updated to "Case sensitive" and "Find/Replace whole words only, not part of other words".
+- The clipboard info message now reads "Clipboard information: ...".
+- Documentation now includes links to other available languages.
+- What's New information is now available in both the documentation and the installation dialog.
+- Development support information has been removed from the documentation and installation dialog.
 
 ## Features
 
 - Edit the current clipboard text in a multiline editor.
-- Clear clipboard content with a single button.
-- Read clipboard text or selected text in the editor.
+- Find text with a dedicated Find dialog.
+- Replace text within the editor.
 - Show information (characters, words, lines) about clipboard text.
-- Find and replace inside the editor.
 - Optional clipboard backup (protect mode) with restore.
-- Global shortcuts for Read and Information.
+- Global shortcuts for Information.
 
 ## How to use
 
-1. Press `Ctrl+Alt+C` to open the editor.
+1. Press `NVDA+E` to open the editor.
 2. Edit the text as needed.
-3. Use the buttons or shortcuts for Read, Information, Find/Replace, Clear, Save, or Cancel.
-4. Press Save to update the clipboard with the edited content.
+3. Use the buttons or shortcuts for Information, Find, Replace, Save (Ctrl+S), or Cancel (Esc).
+4. Press Save (Ctrl+S) to update the clipboard with the edited content.
 
 ## Shortcuts
 
 Global shortcuts (work anywhere in NVDA):
 
-- `Ctrl+Alt+C` - Open the clipboard editor.
-- `Alt+R` - Read clipboard text.
-- `Alt+I` - Show information about clipboard text.
-- `Ctrl+Shift+Z` - Restore previous clipboard content (protect mode).
+- `NVDA+E` - Open the clipboard editor.
+- `NVDA+I` - Show information about clipboard text.
+- `NVDA+Z` - Restore previous clipboard content (protect mode).
 
 Editor shortcuts:
-
-- `Alt+C` - Clear clipboard content.
-- `Alt+R` - Read selection or full text in the editor.
 - `Alt+I` - Show information about the editor text.
-- `Alt+F` - Find/Replace.
-- `Alt+S` - Save changes.
-- `Esc` - Cancel.
+- `Alt+F` - Find text.
+- `Alt+R` - Replace text.
+- `Ctrl+S` - Save changes (Save button).
+- `Esc` - Cancel (Cancel button).
 
-If the clipboard is empty, Read and Information will announce "clipboard is empty".
+If the clipboard is empty, Information will announce "clipboard is empty".
 
 ## Settings
 
 Open NVDA Settings and select the add-on category:
 
 - Keep shortcuts active when buttons are hidden in editor (default: enabled).
-- Enable Clear button in editor.
-- Enable Read button in editor.
 - Enable Information button in editor.
-- Enable Find/Replace button in editor.
+- Enable Find button in editor.
+- Enable Replace button in editor.
 - Enable protect mode (clipboard backup).
 - Number of backup levels.
 
 ## Protect mode (clipboard backup)
 
-When protect mode is enabled, the add-on stores a history of clipboard content before saving. You can restore the previous clipboard content using `Ctrl+Shift+Z`. The number of saved backups is controlled by "Number of backup levels".
+When protect mode is enabled, the add-on stores a history of clipboard content before saving. You can restore the previous clipboard content using `NVDA+Z`. The number of saved backups is controlled by "Number of backup levels".
 
 ## Notes
 
-- Clearing and saving will store an empty clipboard if you choose to save it.
-- Find/Replace supports match case and replaces within the editor text only.
+- Find and Replace support match case and work within the editor text only.
+- In the Find dialog, type your text and press Esc to jump to the next match.
 
 ## License
 
 This add-on is released under the GNU General Public License version 2 (GPL v2).
 
-## Support Development
-
-If you want to support development, you can donate:
-
-- **Credit card (Name: Fauzan)**:
-```
-106529506491
-```
-- **Other donation methods (Indonesia only)**:
-  [https://fauzanaja.com/berikan-dukungan/](https://fauzanaja.com/berikan-dukungan/)
-  
 ## Contact
 
 - Email: [surel@fauzanaja.com](mailto:surel@fauzanaja.com)

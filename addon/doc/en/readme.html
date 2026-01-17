@@ -1,121 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Cliptboard Content Editor</title>
-    <link rel="stylesheet" href="../style.css">
-  </head>
-  <body>
-    <h1>Cliptboard Content Editor</h1>
-    <p>Author: Fauzan January</p>
-    <p>This NVDA add-on lets you edit the current clipboard text in a simple dialog before pasting it elsewhere. It also provides quick actions to read the clipboard, show information, and find/replace text.</p>
-
-    <h2>Features</h2>
-    <ul>
-      <li>Edit the current clipboard text in a multiline editor.</li>
-      <li>Clear clipboard content with a single button.</li>
-      <li>Read clipboard text or selected text in the editor.</li>
-      <li>Show information (characters, words, lines) about clipboard text.</li>
-      <li>Find and replace inside the editor.</li>
-      <li>Optional clipboard backup (protect mode) with restore.</li>
-      <li>Global shortcuts for Read and Information.</li>
-    </ul>
-
-    <h2>How to use</h2>
-    <ol>
-      <li>Press <code>Ctrl+Alt+C</code> to open the editor.</li>
-      <li>Edit the text as needed.</li>
-      <li>Use the buttons or shortcuts for Read, Information, Find/Replace, Clear, Save, or Cancel.</li>
-      <li>Press Save to update the clipboard with the edited content.</li>
-    </ol>
-
-    <h2>Shortcuts</h2>
-    <p>Global shortcuts (work anywhere in NVDA):</p>
-    <ul>
-      <li><code>Ctrl+Alt+C</code> - Open the clipboard editor.</li>
-      <li><code>Alt+R</code> - Read clipboard text.</li>
-      <li><code>Alt+I</code> - Show information about clipboard text.</li>
-      <li><code>Ctrl+Shift+Z</code> - Restore previous clipboard content (protect mode).</li>
-    </ul>
-
-    <p>Editor shortcuts:</p>
-    <ul>
-      <li><code>Alt+C</code> - Clear clipboard content.</li>
-      <li><code>Alt+R</code> - Read selection or full text in the editor.</li>
-      <li><code>Alt+I</code> - Show information about the editor text.</li>
-      <li><code>Alt+F</code> - Find/Replace.</li>
-      <li><code>Alt+S</code> - Save changes.</li>
-      <li><code>Esc</code> - Cancel.</li>
-    </ul>
-
-    <p>If the clipboard is empty, Read and Information will announce "clipboard is empty".</p>
-
-    <h2>Settings</h2>
-    <p>Open NVDA Settings and select the add-on category:</p>
-    <ul>
-      <li>Keep shortcuts active when buttons are hidden in editor (default: enabled).</li>
-      <li>Enable Clear button in editor.</li>
-      <li>Enable Read button in editor.</li>
-      <li>Enable Information button in editor.</li>
-      <li>Enable Find/Replace button in editor.</li>
-      <li>Enable protect mode (clipboard backup).</li>
-      <li>Number of backup levels.</li>
-    </ul>
-
-    <h2>Protect mode (clipboard backup)</h2>
-    <p>When protect mode is enabled, the add-on stores a history of clipboard content before saving. You can restore the previous clipboard content using <code>Ctrl+Shift+Z</code>. The number of saved backups is controlled by "Number of backup levels".</p>
-
-    <h2>Notes</h2>
-    <ul>
-      <li>Clearing and saving will store an empty clipboard if you choose to save it.</li>
-      <li>Find/Replace supports match case and replaces within the editor text only.</li>
-    </ul>
-
-    <h2>License</h2>
-    <p>This add-on is released under the GNU General Public License version 2 (GPL v2).</p>
-
-    <h2>Support development</h2>
-    <p>If you want to support development, you can donate:</p>
-    <ul>
-      <li>
-        Credit card: 106529506491 (Name: Fauzan)
-        <button type="button" onclick="copyDonationCardNumber()">Copy card number</button>
-      </li>
-      <li>Please visit the following page for other donation methods (Indonesia only): <a href="https://fauzanaja.com/berikan-dukungan/">https://fauzanaja.com/berikan-dukungan/</a></li>
-    </ul>
-    <script>
-      function copyDonationCardNumber() {
-        var text = "106529506491";
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(function () {
-            alert("Card number copied to clipboard.");
-          }, function () {
-            alert("Unable to copy the card number right now.");
-          });
-          return;
-        }
-        var ta = document.createElement("textarea");
-        ta.value = text;
-        ta.setAttribute("readonly", "");
-        ta.style.position = "absolute";
-        ta.style.left = "-9999px";
-        document.body.appendChild(ta);
-        ta.select();
-        try {
-          document.execCommand("copy");
-          alert("Card number copied to clipboard.");
-        } catch (e) {
-          alert("Unable to copy the card number right now.");
-        }
-        document.body.removeChild(ta);
-      }
-    </script>
-
-    <h2>Contact</h2>
-    <ul>
-      <li>Email: <a href="mailto:surel@fauzanaja.com">surel@fauzanaja.com</a></li>
-      <li>GitHub: <a href="https://github.com/fauzan-january/">https://github.com/fauzan-january/</a></li>
-      <li>Website: <a href="https://fauzanaja.com/">https://fauzanaja.com/</a></li>
-    </ul>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="../style.css" media="screen">
+<title>Clipboard Content Editor 1.1.0</title>
+</head>
+<body>
+<h1>Cliptboard Content Editor</h1>
+<p>Author: Fauzan January</p>
+<p><a href="../id/readme.html">Read in Indonesian</a></p>
+<p>This NVDA add-on lets you edit the current clipboard text in a simple dialog before pasting it elsewhere. It also provides quick actions to show information, find text, and replace text.</p>
+<h2>What's New?</h2>
+<ul>
+<li>Global shortcuts are now standardized: NVDA+E opens the editor dialog, NVDA+Z restores clipboard backups, and NVDA+I announces clipboard character/word/line counts.</li>
+<li>Global shortcuts can now be reassigned via NVDA Input Gestures.</li>
+<li>The Clear feature has been removed entirely (button, shortcut, settings, and notifications) because you can clear text directly in the clipboard editor.</li>
+<li>The Read feature has been removed entirely (button, shortcut, settings, and notifications) because NVDA already provides clipboard reading via NVDA+C.</li>
+<li>A Find button was added before Replace, with separate enable/disable options and updated shortcuts (Alt+F for Find, Alt+R for Replace).</li>
+<li>Replace now preserves case by default, matching the capitalization of the found text.</li>
+<li>Checkbox labels were updated to "Case sensitive" and "Find/Replace whole words only, not part of other words".</li>
+<li>The clipboard info message now reads "Clipboard information: ...".</li>
+<li>Documentation now includes links to other available languages.</li>
+<li>What's New information is now available in both the documentation and the installation dialog.</li>
+<li>Development support information has been removed from the documentation and installation dialog.</li>
+</ul>
+<h2>Features</h2>
+<ul>
+<li>Edit the current clipboard text in a multiline editor.</li>
+<li>Find text with a dedicated Find dialog.</li>
+<li>Replace text within the editor.</li>
+<li>Show information (characters, words, lines) about clipboard text.</li>
+<li>Optional clipboard backup (protect mode) with restore.</li>
+<li>Global shortcuts for Information.</li>
+</ul>
+<h2>How to use</h2>
+<ol>
+<li>Press <code>NVDA+E</code> to open the editor.</li>
+<li>Edit the text as needed.</li>
+<li>Use the buttons or shortcuts for Information, Find, Replace, Save (Ctrl+S), or Cancel (Esc).</li>
+<li>Press Save (Ctrl+S) to update the clipboard with the edited content.</li>
+</ol>
+<h2>Shortcuts</h2>
+<p>Global shortcuts (work anywhere in NVDA):</p>
+<ul>
+<li><code>NVDA+E</code> - Open the clipboard editor.</li>
+<li><code>NVDA+I</code> - Show information about clipboard text.</li>
+<li><code>NVDA+Z</code> - Restore previous clipboard content (protect mode).</li>
+</ul>
+<p>Editor shortcuts:
+- <code>Alt+I</code> - Show information about the editor text.
+- <code>Alt+F</code> - Find text.
+- <code>Alt+R</code> - Replace text.
+- <code>Ctrl+S</code> - Save changes (Save button).
+- <code>Esc</code> - Cancel (Cancel button).</p>
+<p>If the clipboard is empty, Information will announce "clipboard is empty".</p>
+<h2>Settings</h2>
+<p>Open NVDA Settings and select the add-on category:</p>
+<ul>
+<li>Keep shortcuts active when buttons are hidden in editor (default: enabled).</li>
+<li>Enable Information button in editor.</li>
+<li>Enable Find button in editor.</li>
+<li>Enable Replace button in editor.</li>
+<li>Enable protect mode (clipboard backup).</li>
+<li>Number of backup levels.</li>
+</ul>
+<h2>Protect mode (clipboard backup)</h2>
+<p>When protect mode is enabled, the add-on stores a history of clipboard content before saving. You can restore the previous clipboard content using <code>NVDA+Z</code>. The number of saved backups is controlled by "Number of backup levels".</p>
+<h2>Notes</h2>
+<ul>
+<li>Find and Replace support match case and work within the editor text only.</li>
+<li>In the Find dialog, type your text and press Esc to jump to the next match.</li>
+</ul>
+<h2>License</h2>
+<p>This add-on is released under the GNU General Public License version 2 (GPL v2).</p>
+<h2>Contact</h2>
+<ul>
+<li>Email: <a href="mailto:surel@fauzanaja.com">surel@fauzanaja.com</a></li>
+<li>GitHub: <a href="https://github.com/fauzan-january/">https://github.com/fauzan-january/</a></li>
+<li>Website: <a href="https://fauzanaja.com/">https://fauzanaja.com/</a></li>
+</ul>
+</body>
 </html>
